@@ -68,7 +68,7 @@ def verify(message):
         bot.send_message(message.chat.id, "Хватит слать всякую херню!!!")
         return False
     if message.forward_from_message_id !=None or message.forward_from !=None:
-        bot.send_message(message.chat.id, "Вы задолбали уже! хватит пересылать мне всякую хрень! Если хотите пользоваться ботом, можно же формировать нормальные запросы. просто добавьте его в группу и обращайтесь к боту, как указано в правилах Телеграм.!!!\n Ну а если вы обычный пользователь, и у вас просто случайно вышло, то все ок! просто пишите мне напрямую:\n@Book_dl_bot")
+        bot.send_message(message.chat.id, "Вы задолбали уже! хватит пересылать мне всякую хрень! Если хотите пользоваться ботом, можно же формировать нормальные запросы. просто добавьте его в группу и обращайтесь к боту, как указано в правилах Телеграм.!!!\n Ну а если вы обычный пользователь, и у вас просто случайно вышло, то все ок! просто пишите мне напрямую:\n" + bot_name)
         return False
     if len_message >100:
         bot.send_message(message.chat.id, "Ох и длиннющее сообщение... Вы что решили тут роман написать? Не буду я искать.")
@@ -94,6 +94,14 @@ def all_hernya(hernya):
     bot.send_message(hernya.chat.id, "Спасибо! Я перешлю это владельцу бота! Можете присылать свои видосики, аудио-сообщения, музычку хорошую и всякую другую херню...")
     msg_id_from_chat =hernya.message_id
     bot.forward_message(channel1_chatid, hernya.chat.id, msg_id_from_chat)
+    return True
+
+
+@bot.message_handler(content_types=["new_chat_members", "left_chat_member", "new_chat_title", "new_chat_photo", "delete_chat_photo",
+                 "group_chat_created", "supergroup_chat_created", "channel_chat_created", "migrate_to_chat_id",
+                 "migrate_from_chat_id", "pinned_message"])
+def passed(message):
+    
     return True
 
 

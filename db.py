@@ -250,7 +250,7 @@ def user_bannet(n, b=0):
         return None
 
 
-def book_to_ban(n, b=1):  #this function searches the database 
+def book_to_ban(n, b=1): 
     try:
         con =sql.Connection("db.sqlite3")
         cur =con.cursor()
