@@ -1,0 +1,5 @@
+/freelibbot
+config.py
+/.vscode
+db.sqlite3
+dbuser.sqlite
