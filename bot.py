@@ -81,6 +81,20 @@ def start(message):
     bot.send_message(message.chat.id, "Привет! Я умею искать книги.")
 
 
+@bot.message_handler(commands=['help'])
+def help(message):
+    bot.send_message(message.chat.id, "Просто введите фамилию автора и название книги, либо только одно из двух и бот все найдет!\n Можно искать по фамилии переводчика, или по названию серии книг.\n  Можно переставлять слова местами и писать все с маленькой буквы:\n  (война толстой и лев мир) – это то же, что и:\n  (Лев Толстой – Война и мир), бот все поймет.\n   Чтобы оставить <b>отзыв</b>, ваши пожелания, передать мне привет, напишите (дробь и английская 'o' пробел и текст сообщения.) <i> /o ваш отзыв</i>.  Либо задержите палец на команде   /o   Она должна подставиться сама в текстовое поле, и после пробела введите сообщение.", parse_mode="html")
+
+
+@bot.message_handler(commands=['o', "O"])
+def feedback(message):
+    if len(message.text) <5:
+        bot.send_message(message.chat.id, "Попробуйте еще разок! Уверен, у вас получится.")
+    else:
+        bot.forward_message(admin_list[1], message.chat.id, message.message_id)
+        bot.send_message(message.chat.id, "<b>Спасибо за ваш отзыв!</b>",parse_mode="html")
+
+
 @bot.message_handler(content_types=['document'])
 def handle_docs(message):
     chat_id = message.chat.id
