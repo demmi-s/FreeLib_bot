@@ -1,7 +1,8 @@
 # coding: utf8
 from telebot import *
 import time
-from db import searcher, user_to_database, user_download, create_table_users, if_book_in_telegram, user_bannet, book_to_ban
+from db import searcher, user_to_database, user_download, create_table_users,\
+     if_book_in_telegram, user_bannet, book_to_ban, users_statistics, getdb
 from downloader import searchBook
 import io
 import datetime
@@ -157,7 +158,48 @@ def ban(message):
         else:   bot.send_message(message.chat.id, 'Book not found.')
 
 
-@bot.message_handler(func =lambda m: m.text[0] =="/" and m.text[1:7].isdigit() ==True)
+@bot.message_handler(commands=['h','d', 'm', 's', 'dl', "getdb"])
+def statistic(message):
+    user_id =message.from_user.id
+    if user_id not in admin_list:
+        return True
+    hours =1; days =None; sort =2
+    commands ={'/h':(hours,days,sort), '/m':(1, 30, sort), '/d':(1, 1, sort), "/s": (1, 1, 1), '/dl':(hours, 1, 2)}
+    m =message.text
+    command_and_id =m.split()
+    result ="None"
+    if command_and_id[0] =="/getdb":
+        db =getdb()
+        if not db:
+            bot.send_message(message.chat.id, "Ошибка! Файл с базой недоступен.")
+            return True
+        bot.send_document(message.chat.id, db)
+        return True
+    if len(command_and_id) ==1:
+        result =users_statistics(*commands.get(command_and_id[0]))
+    if len(command_and_id) ==2 and command_and_id[0]=="/h":
+        hours =command_and_id[1]
+        if (hours.isdecimal() !=True) or int(hours) >500000:
+            return True
+        result =users_statistics(int(hours), days)
+    if len(command_and_id) ==3 and command_and_id[0]=="/h":
+        hours =command_and_id[1]
+        sort =command_and_id[2]
+        if (hours.isdecimal() !=True) or (sort.isdecimal() !=True or int(sort) > 2) or int(hours) >500000:
+            return True
+        result =users_statistics(int(hours), days, int(sort))
+    if (len(command_and_id)==3 or len(command_and_id)==2) and command_and_id[0]!="/h":
+        return True
+    if result =="":
+        result ="Empty"
+    t2 =time.time().__round__()
+    bot.send_message(message.chat.id, \
+    "Бот работает: {}\n Запросов: {}\n Скачано с сервера файлов: {}"\
+    .format(datetime.timedelta(seconds=t2 -t) ,search_count,\
+        dl_books_count) +"\n\n  Запрос к базе\n"+result)
+
+
+@bot.message_handler(func =lambda m: m.text is not None and m.text[0] =="/" and m.text[1:7].isdigit() ==True)
 def upload_file(message):
     global t; global dl_books_count; global search_count
     user_id =message.from_user.id
@@ -167,7 +209,7 @@ def upload_file(message):
     if  ban ==True:
         return True
     book_rowid =int(message.text[1:7])
-    if book_rowid >500000:
+    if book_rowid >600000:
         return True
     result =()
     book_already = if_book_in_telegram(book_rowid)

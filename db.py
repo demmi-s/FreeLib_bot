@@ -29,13 +29,19 @@ def search(s):  #this function searches the database
         if (con):
             con.close()
 
+
 def showsize(n):
-    n =float(n)
-    if n >1048576:
-        return " ("+ str(round((n/1024/1024), 2))+" MB.) "
+    try:
+        n =float(n)
+    except ValueError:
+        return ""
+    if n >=1073741824:
+        return " ("+ str(round((n/1073741824), 3))+" GB.) "
+    if n >=1048576:
+        return " ("+ str(round((n/1048576), 2))+" MB.) "
     if n <1048576:
-        
         return " ("+ str(round((n/1024), 1))+" KB.) "
+    
 
 #The list with tuples is processed here. 
 # and formatting of search results. The function returns a list with lists. 
@@ -277,6 +283,77 @@ def book_to_ban(n, b=1):
     except sql.Error as error:
         print("Ошибка при подключении к sqlite (book_to_ban) ", error)
         return None
+    finally:
+        if (con):
+            con.close()
+
+
+def getdb():
+    try:
+        with open("dbuser.sqlite", "rb") as f:
+            return f.name, f.read()
+    except:
+        return None
+
+
+def users_statistics(hours =1, days =None, sort =0, number_of_lines =30):
+    #sort: 0 - sort by date. 1 - sorting about requests. 2 - sorting by the amount of loaded data. 
+    t =time().__round__(); day = 86400; hour =3600; result_time =hour
+    if hours <1 or isinstance(hours, int) ==False:  hours =1
+    if days is None:   result_time =hour *hours
+    if days:   result_time = day *days
+    mode ={0: "SELECT  userid, firstname, lastname, username, dl_bytes, count, strftime('%d-%m-%Y %H:%M:%S',timestamp , 'unixepoch', 'localtime') FROM users\
+    WHERE timestamp > ? ORDER BY timestamp DESC", 1: "SELECT  userid, firstname, lastname, username, dl_bytes, count, strftime('%d-%m-%Y %H:%M:%S',timestamp , 'unixepoch', 'localtime') FROM users\
+    WHERE timestamp > ? ORDER BY count DESC", 2: "SELECT  userid, firstname, lastname, username, dl_bytes, count, strftime('%d-%m-%Y %H:%M:%S',timestamp , 'unixepoch', 'localtime') FROM users\
+    WHERE timestamp > ? ORDER BY dl_bytes DESC"}
+    colums ={0:'id: ', 1: ' ', 2:' ', 4:'\n ⬇ ', 3:' ', 5:' 🔎 ', 6: " \n"}
+    try:
+        con =sql.Connection("dbuser.sqlite")
+        cur =con.cursor()
+        cur.execute(mode.get(sort), (t - result_time ,))
+        rows =cur.fetchmany(number_of_lines)
+        prepared_message =""
+        if rows ==[]:
+            con.close()
+            
+            return prepared_message
+
+        cur.execute("SELECT COUNT(userid), SUM(dl_bytes), SUM(count) FROM users WHERE timestamp > ?",(t -result_time,))
+        total_users =list(cur.fetchone())
+        cur.execute("SELECT COUNT(filename_zip), SUM(dl_count), SUM(dl_from_telegram) FROM bot_sending_files")
+        total_files =list(cur.fetchone())
+        con.close()
+        for row in rows:
+            result_strings =[]
+            for n, col in enumerate(row):
+                if col ==None:
+                    continue
+                if n ==4:
+                    col = showsize(col)
+                r_string =colums.get(n)
+                result_strings.append(r_string + str(col))
+            one_user =" ".join(result_strings)
+            result_strings =[]
+            prepared_message ="".join(prepared_message + " 👤 "+one_user+"_]"+"\n")
+            
+        result_users =""; result_files =""
+        text_files =[" \nУникальных файлов: ", " \nфайлов скачано: ", " \nОбщий размер скачанного:"]
+        text_users =[" \nЗа выбранный период новых пользователей: ", " \nСкачано новыми пользователями:", " \nзапросов: "]
+        if total_files[2] !=None and total_files[2] !=0:
+            total_files[2] =showsize(total_files[2])
+            result_files ="".join([str(x)+str(y) for x, y in zip(text_files, total_files)])
+        if total_users[1] !=None and total_users[1] >0:
+            total_users[1]= showsize(total_users[1])
+        if int(total_users[0]) >0:
+            result_users ="".join([str(x)+str(y) for x, y in zip(text_users, total_users)])+"\n___"
+
+        prepared_message ="".join(result_users +"\n"+ prepared_message+"\n"+"  Всего в базе\n"+result_files)
+
+        return prepared_message
+
+    except sql.Error as error:
+        print("Ошибка при подключении к dbuser. (users_statistics) ", error)
+        return ""
     finally:
         if (con):
             con.close()
